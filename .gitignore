@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Local config (you may want to commit a template instead)
+config.yaml
+
+# Sensitive Google credentials
+data/credentials.json
+data/token.json
+
+# Local database / state
+data/*.db
+data/*.sqlite
+
+# Temp / cache
+*.tmp
+*.cache
+
+# Zip artifacts
+*.zip

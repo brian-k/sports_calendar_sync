@@ -1,0 +1,36 @@
+# Copy this to config.yaml and fill in your real values.
+# token_path should point to the OAuth token you generated after consent.
+# credentials_path should point to your Google OAuth client credentials JSON.
+
+google:
+  credentials_path: ./data/credentials.json
+  token_path: ./data/token.json
+  app_name: Family Sports Calendar Sync
+
+defaults:
+  sync_window_past_days: 30
+  sync_window_future_days: 365
+  event_title_prefix: true
+  delete_missing_events: true
+  request_timeout_seconds: 30
+
+calendars:
+  luke:
+    google_calendar_id: luke_master_calendar_id@group.calendar.google.com
+    feeds:
+      - id: soccer
+        name: Luke Soccer
+        url: https://example.com/luke-soccer.ics
+        title_prefix: "[Soccer]"
+      - id: baseball
+        name: Luke Baseball
+        url: https://example.com/luke-baseball.ics
+        title_prefix: "[Baseball]"
+
+  noah:
+    google_calendar_id: noah_master_calendar_id@group.calendar.google.com
+    feeds:
+      - id: basketball
+        name: Noah Basketball
+        url: https://example.com/noah-basketball.ics
+        title_prefix: "[Basketball]"

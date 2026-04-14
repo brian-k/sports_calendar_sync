@@ -1,0 +1,36 @@
+# Copy this to config.yaml and fill in your real values.
+# token_path should point to the OAuth token you generated after consent.
+# credentials_path should point to your Google OAuth client credentials JSON.
+
+google:
+  credentials_path: ./data/credentials.json
+  token_path: ./data/token.json
+  app_name: Family Sports Calendar Sync
+
+defaults:
+  sync_window_past_days: 30
+  sync_window_future_days: 365
+  event_title_prefix: true
+  delete_missing_events: true
+  request_timeout_seconds: 30
+
+calendars:
+  luke:
+    google_calendar_id: https://calendar.google.com/calendar/ical/1a9a9fe431166c51f28199f60a9bad9b555a30882062eb56fd3391046aeba042%40group.calendar.google.com/private-a5cb0eb9c28dadae07807c6bb4c6c840/basic.ics
+    feeds:
+      - id: lacrosse_spring_26
+        name: Lacrosse Spring 26
+        url: http://ical-cdn.teamsnap.com/team_schedule/b1a05657-cbe8-4952-9aa0-79ead6ee334b.ics
+        title_prefix: "[Lacrosse]"
+      - id: rookies_spring_26
+        name: Rookies Spring 26
+        url: webcal://api.team-manager.gc.com/ics-calendar-documents/user/ebce3e52-7eab-4577-b4ea-d3d0c00bd481.ics?teamId=f51f62c4-2f30-470c-8e71-2a568265f6d6&token=6ed3d728d5414720aff055107454c3696278681d27a46ce5242771512bbe8260
+        title_prefix: "[Rookies]"
+
+  noah:
+    google_calendar_id: https://calendar.google.com/calendar/ical/8fe9583cbefa9449debf6a4462804979765bffb458a9cd63dbada85fad7c1f46%40group.calendar.google.com/private-f22ed5015b183198d718fd91ab7904ca/basic.ics
+    feeds:
+      - id: minis_spring_26
+        name: Minis Spring 26
+        url: webcal://ical.sportngin.com/v3/calendar/ical?uuid=5021b3cae3c3492fa787fd4aa150e72a&v=1776174072780&src=myse
+        title_prefix: "[Minis]"
