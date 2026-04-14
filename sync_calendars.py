@@ -50,7 +50,10 @@ class SyncEngine:
         logging.info("Syncing child=%s calendar=%s", child, calendar_id)
 
         for feed in child_cfg["feeds"]:
-            self.sync_feed(child=child, calendar_id=calendar_id, feed=feed)
+            try:
+                self.sync_feed(child=child, calendar_id=calendar_id, feed=feed)
+            except Exception as e:
+                logging.exception("Feed sync failed child=%s feed_id=%s error=%s", child, feed.get("id"), e)  
 
     def sync_feed(self, child: str, calendar_id: str, feed: dict[str, Any]) -> None:
         feed_id = feed["id"]

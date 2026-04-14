@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Any
 
+from urllib.parse import urlparse
 import requests
 from dateutil import tz
 from icalendar import Calendar
@@ -40,10 +41,34 @@ def _hash_event(parts: list[str]) -> str:
     return hashlib.sha256(joined.encode("utf-8")).hexdigest()
 
 
+def normalize_calendar_urls(url: str):
+    parsed = urlparse(url)
+
+    if parsed.scheme == "webcal":
+        base = url[len("webcal://"):]
+        return [
+            f"https://{base}",
+            f"http://{base}",
+        ]
+
+    return [url]
+
+
 def fetch_and_parse_ics(url: str, timeout_seconds: int = 30) -> list[ParsedEvent]:
-    response = requests.get(url, timeout=timeout_seconds)
-    response.raise_for_status()
-    calendar = Calendar.from_ical(response.content)
+    candidate_urls = normalize_calendar_urls(url)
+
+    last_exception = None
+
+    for candidate in candidate_urls:
+        try:
+            response = requests.get(candidate, timeout=timeout_seconds)
+            response.raise_for_status()
+            calendar = Calendar.from_ical(response.content)
+            break
+        except Exception as e:
+            last_exception = e
+    else:
+        raise last_exception
 
     events: list[ParsedEvent] = []
     for component in calendar.walk():
