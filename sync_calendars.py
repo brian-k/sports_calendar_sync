@@ -27,7 +27,7 @@ class SyncEngine:
         self.defaults = config.get("defaults", {})
         self.service = get_calendar_service(
             credentials_path=google_cfg["credentials_path"],
-            token_path=google_cfg["token_path"],
+            token_path=google_cfg.get("token_path"),
         )
         db_path = self.defaults.get("db_path", "./data/sync.db")
         self.storage = Storage(db_path=db_path)

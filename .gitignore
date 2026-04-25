@@ -30,7 +30,7 @@ Thumbs.db
 config.yaml
 
 # Sensitive Google credentials
-data/credentials.json
+data/service_account.json
 data/token.json
 
 # Local database / state
@@ -43,3 +43,9 @@ data/*.sqlite
 
 # Zip artifacts
 *.zip
+
+# Logs
+logs/
+ 
+# Temp files
+tmp/
