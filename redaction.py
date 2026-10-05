@@ -11,8 +11,15 @@ _URL_RE = re.compile(r"(?:https?|webcal)://[^\s'\")>]+")
 _WITH_URL_RE = re.compile(r"(with url:\s*)\S+")
 
 
+_CALENDAR_ID_RE = re.compile(r"(/calendars/)[^/]+")
+
+
 def _redact_url(match: re.Match[str]) -> str:
     parsed = urlparse(match.group(0))
+    if parsed.netloc.endswith("googleapis.com"):
+        # Keep the API path and event ID (not secret, needed to debug); hide the calendar ID and query.
+        path = _CALENDAR_ID_RE.sub(r"\1<redacted>", parsed.path)
+        return f"{parsed.scheme}://{parsed.netloc}{path}"
     return f"{parsed.scheme}://{parsed.netloc}/<redacted>"
 
 

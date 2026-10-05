@@ -27,6 +27,12 @@ def setup_logging() -> None:
         handler.setFormatter(RedactingFormatter(LOG_FORMAT))
 
 
+def _http_status(exc: HttpError) -> int | None:
+    resp = getattr(exc, "resp", None)
+    status = getattr(resp, "status", None)
+    return int(status) if status is not None else getattr(exc, "status_code", None)
+
+
 def _error_summary(exc: Exception) -> str:
     return f"{type(exc).__name__}: {redact(str(exc))}"[:300]
 
@@ -134,6 +140,31 @@ class SyncEngine:
                 ),
             )
 
+    def _create_event(
+        self,
+        child: str,
+        feed_id: str,
+        calendar_id: str,
+        ical_uid: str,
+        event_body: dict[str, Any],
+        content_hash: str,
+        now_str: str,
+    ) -> str:
+        """Insert the event in Google and record (or replace) its mapping. Returns the new event ID."""
+        created_event = self.service.events().insert(
+            calendarId=calendar_id,
+            body=event_body,
+        ).execute()
+        self.storage.upsert_mapping(
+            child=child,
+            feed_id=feed_id,
+            ical_uid=ical_uid,
+            google_event_id=created_event["id"],
+            last_seen_hash=content_hash,
+            last_seen_at=now_str,
+        )
+        return created_event["id"]
+
     def sync_feed(self, child: str, calendar_id: str, feed: dict[str, Any]) -> None:
         feed_id = feed["id"]
         feed_name = feed.get("name", feed_id)
@@ -172,18 +203,7 @@ class SyncEngine:
             ).hexdigest()
 
             if mapping is None:
-                created_event = self.service.events().insert(
-                    calendarId=calendar_id,
-                    body=event_body,
-                ).execute()
-                self.storage.upsert_mapping(
-                    child=child,
-                    feed_id=feed_id,
-                    ical_uid=parsed.ical_uid,
-                    google_event_id=created_event["id"],
-                    last_seen_hash=content_hash,
-                    last_seen_at=now_str,
-                )
+                self._create_event(child, feed_id, calendar_id, parsed.ical_uid, event_body, content_hash, now_str)
                 created += 1
                 continue
 
@@ -200,10 +220,28 @@ class SyncEngine:
                 skipped += 1
                 continue
 
-            existing = self.service.events().get(
-                calendarId=calendar_id,
-                eventId=google_event_id,
-            ).execute()
+            try:
+                existing = self.service.events().get(
+                    calendarId=calendar_id,
+                    eventId=google_event_id,
+                ).execute()
+            except HttpError as exc:
+                if _http_status(exc) not in (404, 410):
+                    raise
+                # The event is gone from Google (e.g. deleted by hand) but still
+                # mapped here. Recreate it so the calendar keeps mirroring the feed.
+                new_id = self._create_event(
+                    child, feed_id, calendar_id, parsed.ical_uid, event_body, content_hash, now_str
+                )
+                logging.info(
+                    "Recreated event missing from Google child=%s feed_id=%s old_event_id=%s new_event_id=%s",
+                    child,
+                    feed_id,
+                    google_event_id,
+                    new_id,
+                )
+                created += 1
+                continue
             private_props = existing.get("extendedProperties", {}).get("private", {})
             if private_props.get("source") != SYNC_SOURCE:
                 logging.warning(
