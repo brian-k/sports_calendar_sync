@@ -9,6 +9,9 @@ venv/
 .env/
 .venv/
 
+# Deploy settings (server host/path); copy .env.example to .env
+.env
+
 # Distribution / packaging
 build/
 dist/

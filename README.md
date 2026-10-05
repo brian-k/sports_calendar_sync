@@ -56,6 +56,36 @@ Run every 15 minutes:
 */15 * * * * /usr/bin/python3 /path/to/calendar-sync/sync_calendars.py --config /path/to/calendar-sync/config.yaml >> /path/to/calendar-sync/logs/cron.log 2>&1
 ```
 
+## Reliability and alerts
+- Feed fetches retry transient failures (timeouts, connection errors, 429, 5xx) with
+  exponential backoff; `defaults.fetch_max_attempts` sets the total tries.
+- Feed and Google URLs are redacted from logs (host kept, path and query removed).
+- With a `notify` section in `config.yaml`, you get one email when a feed has failed
+  `failure_threshold` runs in a row (default 6) and one when it recovers. Failure
+  streaks are tracked in the SQLite DB. Without `notify`, the log gets a
+  `FEED FAILING` error line instead.
+- Past events are never deleted, even if their feed drops them or shuts down.
+
+## Deploying to a server
+Code goes through git; secrets go over SSH and never touch git.
+
+1. Copy `.env.example` to `.env` (git-ignored) and set:
+   - `DEPLOY_HOST` - SSH host or alias for the server
+   - `DEPLOY_DIR` - absolute path of the project on the server
+2. Push code, then pull it on the server:
+   ```bash
+   git push origin main
+   ssh "$DEPLOY_HOST" "cd $DEPLOY_DIR && git pull"
+   ```
+3. Push the git-ignored secrets (`config.yaml`, `data/service_account.json`):
+   ```bash
+   ./deploy_secrets.sh --dry-run   # preview
+   ./deploy_secrets.sh
+   ```
+   Files are set to mode 600. `sync.db` is not copied unless you pass
+   `--with-db`, because the server's database is live; overwriting it with a
+   stale copy can duplicate events.
+
 ## Notes
 - This starter does not expand recurring ICS rules into separate events beyond what the `icalendar` library exposes from the feed. Many sports feeds already publish concrete VEVENT instances, which is usually fine.
 - For very large feeds, you may later want to restrict by date window before creating or updating events.
