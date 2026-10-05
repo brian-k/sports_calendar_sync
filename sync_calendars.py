@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -80,6 +82,11 @@ class SyncEngine:
                 feed_name=feed_name,
                 title_prefix=title_prefix,
             )
+            # Hash the event as it will appear in Google so mapping changes
+            # (e.g. title_prefix) trigger updates, not just feed changes.
+            content_hash = hashlib.sha256(
+                json.dumps(event_body, sort_keys=True, default=str).encode("utf-8")
+            ).hexdigest()
 
             if mapping is None:
                 created_event = self.service.events().insert(
@@ -91,20 +98,20 @@ class SyncEngine:
                     feed_id=feed_id,
                     ical_uid=parsed.ical_uid,
                     google_event_id=created_event["id"],
-                    last_seen_hash=parsed.event_hash,
+                    last_seen_hash=content_hash,
                     last_seen_at=now_str,
                 )
                 created += 1
                 continue
 
             google_event_id = mapping["google_event_id"]
-            if mapping["last_seen_hash"] == parsed.event_hash:
+            if mapping["last_seen_hash"] == content_hash:
                 self.storage.upsert_mapping(
                     child=child,
                     feed_id=feed_id,
                     ical_uid=parsed.ical_uid,
                     google_event_id=google_event_id,
-                    last_seen_hash=parsed.event_hash,
+                    last_seen_hash=content_hash,
                     last_seen_at=now_str,
                 )
                 skipped += 1
@@ -136,7 +143,7 @@ class SyncEngine:
                 feed_id=feed_id,
                 ical_uid=parsed.ical_uid,
                 google_event_id=google_event_id,
-                last_seen_hash=parsed.event_hash,
+                last_seen_hash=content_hash,
                 last_seen_at=now_str,
             )
             updated += 1
