@@ -13,6 +13,21 @@ defaults:
   event_title_prefix: true
   delete_missing_events: true
   request_timeout_seconds: 30
+  # Total fetch tries per feed (exponential backoff: ~2s, ~4s, ...) for timeouts,
+  # connection errors, 429 and 5xx responses.
+  fetch_max_attempts: 3
+
+# Optional: email when a feed keeps failing, and again when it recovers.
+# Uses an SMTP server on localhost:25 unless smtp_* settings are given.
+notify:
+  email_to: you@example.com
+  # email_from: sports-sync@example.com
+  # failure_threshold: 6        # consecutive failed runs before alerting
+  # smtp_host: localhost
+  # smtp_port: 25
+  # smtp_starttls: false
+  # smtp_username: ""
+  # smtp_password: ""
 
 calendars:
   john:

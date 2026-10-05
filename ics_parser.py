@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import logging
+import random
+import time
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Any
@@ -54,21 +57,69 @@ def normalize_calendar_urls(url: str):
     return [url]
 
 
-def fetch_and_parse_ics(url: str, timeout_seconds: int = 30) -> list[ParsedEvent]:
-    candidate_urls = normalize_calendar_urls(url)
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+MAX_BACKOFF_SECONDS = 60
 
+
+def _is_retryable(exc: Exception) -> bool:
+    """Transient failures only; a 404 or a malformed calendar will not fix itself."""
+    if isinstance(exc, requests.exceptions.HTTPError):
+        return exc.response is not None and exc.response.status_code in RETRYABLE_STATUS
+    # requests' ConnectionError/Timeout are OSErrors too; raw socket errors can leak through.
+    return isinstance(exc, OSError)
+
+
+def _describe(exc: Exception) -> str:
+    if isinstance(exc, requests.exceptions.HTTPError) and exc.response is not None:
+        return f"HTTP {exc.response.status_code}"
+    return type(exc).__name__
+
+
+def _backoff_delay(attempt: int, base_seconds: float, exc: Exception) -> float:
+    """Exponential delay with jitter; honors a numeric Retry-After header."""
+    delay = base_seconds * (2 ** (attempt - 1))
+    delay += random.uniform(0, delay * 0.25)
+    if isinstance(exc, requests.exceptions.HTTPError) and exc.response is not None:
+        retry_after = exc.response.headers.get("Retry-After", "")
+        if retry_after.isdigit():
+            delay = max(delay, float(retry_after))
+    return min(delay, MAX_BACKOFF_SECONDS)
+
+
+def _download_calendar(url: str, timeout_seconds: int) -> Calendar:
     last_exception = None
-
-    for candidate in candidate_urls:
+    for candidate in normalize_calendar_urls(url):
         try:
             response = requests.get(candidate, timeout=timeout_seconds)
             response.raise_for_status()
-            calendar = Calendar.from_ical(response.content)
-            break
+            return Calendar.from_ical(response.content)
         except Exception as e:
             last_exception = e
-    else:
-        raise last_exception
+    raise last_exception
+
+
+def fetch_and_parse_ics(
+    url: str,
+    timeout_seconds: int = 30,
+    max_attempts: int = 3,
+    backoff_base_seconds: float = 2.0,
+) -> list[ParsedEvent]:
+    for attempt in range(1, max_attempts + 1):
+        try:
+            calendar = _download_calendar(url, timeout_seconds)
+            break
+        except Exception as e:
+            if attempt == max_attempts or not _is_retryable(e):
+                raise
+            delay = _backoff_delay(attempt, backoff_base_seconds, e)
+            logging.warning(
+                "Feed fetch failed (%s); retry %s/%s in %.0fs",
+                _describe(e),
+                attempt,
+                max_attempts - 1,
+                delay,
+            )
+            time.sleep(delay)
 
     events: list[ParsedEvent] = []
     for component in calendar.walk():
