@@ -39,16 +39,16 @@ Only events with `source = sports_sync` are eligible for update or delete.
    ```
 5. Run one child first:
    ```bash
-   python sync_calendars.py --config config.yaml --child luke
+   python sync_calendars.py --config config.yaml --child john
    ```
 
 ## Recommended first test
-Use a single feed for Luke first.
+Use a single feed for John first.
 Confirm these four behaviors:
 1. new sports event is created
 2. changed sports event updates
 3. removed sports event deletes
-4. manual event on Luke's Google calendar stays untouched
+4. manual event on John's Google calendar stays untouched
 
 ## Cron example
 Run every 15 minutes:

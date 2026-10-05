@@ -15,22 +15,22 @@ defaults:
   request_timeout_seconds: 30
 
 calendars:
-  luke:
-    google_calendar_id: luke_master_calendar_id@group.calendar.google.com
+  john:
+    google_calendar_id: john_master_calendar_id@group.calendar.google.com
     feeds:
       - id: soccer
-        name: Luke Soccer
-        url: https://example.com/luke-soccer.ics
+        name: John Soccer
+        url: https://example.com/john-soccer.ics
         title_prefix: "[Soccer]"
       - id: baseball
-        name: Luke Baseball
-        url: https://example.com/luke-baseball.ics
+        name: John Baseball
+        url: https://example.com/john-baseball.ics
         title_prefix: "[Baseball]"
 
-  noah:
-    google_calendar_id: noah_master_calendar_id@group.calendar.google.com
+  jack:
+    google_calendar_id: jack_master_calendar_id@group.calendar.google.com
     feeds:
       - id: basketball
-        name: Noah Basketball
-        url: https://example.com/noah-basketball.ics
+        name: Jack Basketball
+        url: https://example.com/jack-basketball.ics
         title_prefix: "[Basketball]"

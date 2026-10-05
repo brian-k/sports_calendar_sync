@@ -29,23 +29,15 @@ Thumbs.db
 # Local config (you may want to commit a template instead)
 config.yaml
 
-# Sensitive Google credentials
-data/service_account.json
-data/token.json
-
-# Local database / state
-data/*.db
-data/*.sqlite
+# Everything in data/ (credentials, tokens, SQLite state) except templates
+data/*
+!data/*.example.json
+!data/.gitkeep
 
 # Temp / cache
 *.tmp
 *.cache
+tmp/
 
 # Zip artifacts
 *.zip
-
-# Logs
-logs/
- 
-# Temp files
-tmp/
